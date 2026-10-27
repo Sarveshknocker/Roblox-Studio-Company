@@ -10,8 +10,8 @@ jobs:
         node: [18, 22]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node }}
       - run: npm test
@@ -20,12 +20,30 @@ jobs:
     defaults:
       run:
         working-directory: skills/studio-engineering/templates/game
+        shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: CompeyDev/setup-rokit@v0.2.1
         with:
           path: skills/studio-engineering/templates/game
-      - run: selene src
-      - run: stylua --check src tests
-      - run: lune run tests/run.luau
-      - run: rojo build -o game.rbxlx
+      # Each check runs even if an earlier one failed, and posts its full output as an annotation (readable without login).
+      - name: report helper
+        run: |
+          cat > "$RUNNER_TEMP/check.sh" <<'SH'
+          name="$1"; shift
+          out="$("$@" 2>&1)"; code=$?
+          echo "$out"
+          if [ $code -ne 0 ]; then
+            msg="${out//'%'/'%25'}"; msg="${msg//$'\r'/'%0D'}"; msg="${msg//$'\n'/'%0A'}"
+            echo "::error title=${name} failed::${msg:0:60000}"
+          fi
+          exit $code
+          SH
+      - run: bash "$RUNNER_TEMP/check.sh" selene selene src
+        if: always()
+      - run: bash "$RUNNER_TEMP/check.sh" stylua stylua --check src tests
+        if: always()
+      - run: bash "$RUNNER_TEMP/check.sh" lune lune run tests/run.luau
+        if: always()
+      - run: bash "$RUNNER_TEMP/check.sh" rojo rojo build -o game.rbxlx
+        if: always()
