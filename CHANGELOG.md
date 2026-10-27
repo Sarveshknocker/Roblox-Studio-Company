@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.1 — 2026-10-27
+Fixes from the first review.
+- **Purchases:** a product that grants an unknown currency (e.g. a typo in economy.json) could be marked as handled
+  with nothing given. Grants are now all-or-nothing (`Pure/Grants.luau`, with Lune tests), applied *before* the
+  PurchaseId is recorded, and checked against the data template at server start. `economy` validation also rejects
+  grants and multipliers for unknown currencies.
+- **Game passes bought mid-session** now work at once: the server handles `PromptGamePassPurchaseFinished` instead of
+  reading ownership only on join (`UserOwnsGamePassAsync` is cached and can lag behind a purchase).
+- **Linter:** remote handlers passed by name (`:Connect(onBuy)`) are now checked. Handlers from another module are
+  reported as unverified. The docs now say plainly that the linter is a safety net, not a guarantee.
+- **Template CI:** Selene and StyLua clean. Every check runs and posts its output as an annotation.
+
 ## 0.1.0 — 2026-10-27
 First release.
 - Studio Manager orchestrator with owner gates (G0 kickoff, G1 concept, G2 vertical slice, G3 launch, weekly live review)

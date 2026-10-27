@@ -27,6 +27,7 @@ local profiles: { [Player]: any } = {}
 local loadedCallbacks: { (Player, any) -> () } = {}
 
 local PlayerData = {}
+PlayerData.TEMPLATE = table.freeze(table.clone(TEMPLATE)) -- read-only copy, for config checks
 
 function PlayerData.get(player: Player): any?
 	return profiles[player]

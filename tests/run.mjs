@@ -115,6 +115,11 @@ test('economy: the sample design validates and the formulas match the Luau Progr
 test('economy: invalid designs are rejected with readable errors', () => {
   const errs = validate({ currencies: ['Coins'], sources: [{ id: 's', currency: 'Gold', perMinute: 1 }], levels: { base: 1, exponent: 1, xpPerMinute: 1, max: 2 }, sessionMinutes: 10, sessionsPerDay: 1 });
   assert.ok(errs.some((e) => /Gold/.test(e)), errs.join('; '));
+  // A product granting a misspelled currency could never be delivered in game.
+  const typo = sampleEconomy('T'); typo.robux[0].grants = { Gemz: 100 }; typo.robux[1].effect.multiplier = { Coinz: 2 };
+  const te = validate(typo);
+  assert.ok(te.some((e) => /grants unknown currency Gemz/.test(e)), te.join('; '));
+  assert.ok(te.some((e) => /multiplier for unknown currency Coinz/.test(e)), te.join('; '));
 });
 
 test('economy: simulation is deterministic, paying players progress faster', () => {

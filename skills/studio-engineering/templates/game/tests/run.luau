@@ -47,6 +47,7 @@ local specs = {
 	RateLimiter = require("./RateLimiter.spec"),
 	Progression = require("./Progression.spec"),
 	ReceiptLedger = require("./ReceiptLedger.spec"),
+	Grants = require("./Grants.spec"),
 }
 
 for name, spec in specs do

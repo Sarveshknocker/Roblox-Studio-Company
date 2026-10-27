@@ -1,6 +1,6 @@
 {
   "name": "roblox-studio-company",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "repository": "github:Sarveshknocker/Roblox-Studio-Company",
   "description": "Turns any AI coding assistant into a complete Roblox game development studio: a Studio Manager who reports to you, plus design, Luau engineering, art, tech art, audio, QA, live-ops, publishing and research departments, with an open-source toolchain and real tools (economy simulator, Roblox security linter, owner reports).",
   "type": "module",

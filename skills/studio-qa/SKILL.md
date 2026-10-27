@@ -18,6 +18,10 @@ without pcall and SetAsync on player data, loops that never yield, server code u
 client HttpService, leaked per-frame connections, and paid random items without the policy check.
 A reviewed exception is allowed only with `-- studio-ignore: <rule-id> <reason>`.
 
+**Limits:** the linter matches patterns and does not understand the code, so a clean report is not proof of safety.
+Handlers passed by name (`:Connect(onBuy)`) are followed within the same file. A handler from another module is
+reported as unverified, and you must review it by hand. Every remote still gets the manual exploit checklist below.
+
 ## Test plan (`TEST_PLAN.md`)
 For each feature: acceptance criteria from the ticket, happy path, edge cases (0, max, full inventory, rejoin mid-action,
 leaving during a purchase), and exploit cases from `studio-engineering/references/security-checklist.md`.

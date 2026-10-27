@@ -19,7 +19,13 @@ export function validate(cfg) {
   for (const s of cfg.sources ?? []) { if (!cur.has(s.currency)) errors.push(`source ${s.id}: unknown currency ${s.currency}`); if (!(s.perMinute > 0) && !(s.perSession > 0)) errors.push(`source ${s.id}: needs perMinute or perSession`); }
   const ids = new Set();
   for (const u of cfg.unlocks ?? []) { if (ids.has(u.id)) errors.push(`unlock ${u.id}: duplicate id`); ids.add(u.id); if (!cur.has(u.currency)) errors.push(`unlock ${u.id}: unknown currency ${u.currency}`); if (!(u.price > 0)) errors.push(`unlock ${u.id}: price must be > 0`); }
-  for (const r of cfg.robux ?? []) { if (!['product', 'pass'].includes(r.kind)) errors.push(`robux ${r.id}: kind must be product or pass`); if (!(r.robux > 0)) errors.push(`robux ${r.id}: robux price must be > 0`); }
+  for (const r of cfg.robux ?? []) {
+    if (!['product', 'pass'].includes(r.kind)) errors.push(`robux ${r.id}: kind must be product or pass`);
+    if (!(r.robux > 0)) errors.push(`robux ${r.id}: robux price must be > 0`);
+    // A product that grants an unknown currency can never be delivered in game (Purchases refuses it).
+    for (const [c, n] of Object.entries(r.grants ?? {})) { if (!cur.has(c)) errors.push(`robux ${r.id}: grants unknown currency ${c}`); if (!(n > 0)) errors.push(`robux ${r.id}: grant of ${c} must be > 0`); }
+    for (const c of Object.keys(r.effect?.multiplier ?? {})) if (!cur.has(c)) errors.push(`robux ${r.id}: multiplier for unknown currency ${c}`);
+  }
   if (cfg.levels && !(cfg.levels.base > 0 && cfg.levels.exponent > 0)) errors.push('levels: base and exponent must be > 0');
   return errors;
 }

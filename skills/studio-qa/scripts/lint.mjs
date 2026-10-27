@@ -6,10 +6,11 @@
 // Complements Selene (general Luau lint) with Roblox-specific risks: free-model backdoors, client-trusted remotes,
 // unsafe DataStore use, scheduler and performance mistakes, and paid-random-item compliance.
 // Suppress a reviewed finding with a comment on the line or the line above:  -- studio-ignore: <rule-id> <reason>
+// It matches patterns, it does not understand the code: a safety net for common mistakes, not proof that code is safe.
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { RULES, SEVERITIES, scopeOf } from './rules.mjs';
+import { RULES, SEVERITIES, CLIENT_VALUE_PARAM, VALIDATION, scopeOf } from './rules.mjs';
 
 const SKIP = new Set(['node_modules', '.git', 'Packages', 'ServerPackages', 'DevPackages', 'Vendor', '.studio-cache']);
 const SOURCE = /\.(lua|luau)$|\.project\.json$/;
@@ -42,6 +43,25 @@ function stripComments(text) {
   return text.replace(/--\[(=*)\[[\s\S]*?\]\1\]/g, (m) => m.replace(/[^\n]/g, ' ')).replace(/--[^\n]*/g, (m) => (/studio-ignore/.test(m) ? m : ' '.repeat(m.length)));
 }
 
+// `remote.OnServerEvent:Connect(onBuy)`: find `onBuy` in the same file and check it like an inline handler.
+// A handler from another module cannot be followed, so it is reported as unverified rather than passed silently.
+function namedHandlerFindings(file, code, lines) {
+  const out = [];
+  const rule = (id) => RULES.find((r) => r.id === id);
+  const report = (r, line, note = '') => {
+    if (!suppressed(lines, line, r.id)) out.push({ rule: r.id, severity: r.severity, title: r.title + note, file, line, scope: 'server', snippet: (lines[line - 1] ?? '').trim().slice(0, 160), why: r.why, fix: r.fix });
+  };
+  for (const m of code.matchAll(/OnServerEvent:Connect\(\s*([A-Za-z_][\w.:]*)\s*\)/g)) {
+    const line = lineOf(code, m.index); const name = m[1].split(/[.:]/).pop();
+    const def = new RegExp(String.raw`function\s+(?:[\w.]+[.:])?${name}\s*\(([^)]*)\)|\b${name}\s*=\s*function\s*\(([^)]*)\)`).exec(code);
+    if (!def) { report(rule('rbx.remote-unvalidated'), line, ` (handler "${m[1]}" is defined elsewhere: check that it validates)`); continue; }
+    const params = def[1] ?? def[2];
+    if (CLIENT_VALUE_PARAM.test(params.split(',').slice(1).join(','))) report(rule('rbx.remote-trusts-client-value'), line);
+    if (!VALIDATION.test(blockAt(code, def.index))) report(rule('rbx.remote-unvalidated'), line);
+  }
+  return out;
+}
+
 export function lintText(file, text) {
   const findings = [];
   const scope = scopeOf(file);
@@ -64,6 +84,7 @@ export function lintText(file, text) {
       if (r.fileLevel) break;
     }
   }
+  if (scope === 'server' && !file.endsWith('.json')) findings.push(...namedHandlerFindings(file, code, lines));
   return findings;
 }
 

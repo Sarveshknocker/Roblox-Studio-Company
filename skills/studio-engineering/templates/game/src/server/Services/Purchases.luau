@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config.Economy) :: any
+local Grants = require(Shared.Pure.Grants)
 local ReceiptLedger = require(Shared.Pure.ReceiptLedger)
 local Net = require(script.Parent.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
@@ -45,9 +46,16 @@ local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
 	end
 	local purchaseId = tostring(receipt.PurchaseId)
 	local data = profile.Data :: any
-	if ReceiptLedger.record(data.ReceiptLedger, purchaseId) then
-		for currency, amount in offer.grants do
-			data[currency] += amount
+	if not ReceiptLedger.has(data.ReceiptLedger, purchaseId) then
+		-- Grant first, record second: if the grant is impossible, the purchase stays unprocessed and Roblox retries it
+		-- after the config is fixed, instead of being marked as handled with nothing given.
+		local problem = Grants.apply(data, offer.grants or {})
+		if problem then
+			warn(`[Purchases] cannot grant product {offer.id}: {problem}. Fix economy.json; Roblox will retry.`)
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+		ReceiptLedger.record(data.ReceiptLedger, purchaseId)
+		for currency, amount in offer.grants or {} do
 			pcall(function()
 				AnalyticsService:LogEconomyEvent(
 					player,
@@ -77,6 +85,13 @@ end
 function Purchases.start()
 	-- Only one script in the whole game may set ProcessReceipt.
 	MarketplaceService.ProcessReceipt = processReceipt
+	-- Catch config mistakes at server start (in Studio), not when a player has already paid.
+	for _, offer in productById do
+		local problem = Grants.check(PlayerData.TEMPLATE :: any, offer.grants or {})
+		if problem then
+			error(`[Purchases] product {offer.id}: {problem}. Fix economy.json, then run studio.mjs config.`)
+		end
+	end
 end
 
 return Purchases

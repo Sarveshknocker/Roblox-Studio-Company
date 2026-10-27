@@ -2,6 +2,10 @@
 // scope ('server' | 'client' | 'any'), requires / requiresNot (file-level RegExps), fileLevel, sameLineNot, and
 // blockNot (skip the match when the block it opens — its line plus the deeper-indented lines after it — matches).
 
+// Parameter names that mean "the client is telling the server a value the server should decide".
+export const CLIENT_VALUE_PARAM = /\b(price|cost|amount|reward|damage|coins|cash|money|gems|xp|exp|health|speed)\b/i;
+export const VALIDATION = /typeof\s*\(|type\s*\(|Validate|validate|assert\s*\(|t\.\w+\(|guard|check/;
+
 export const RULES = [
   // ---------- Backdoors and unsafe code (free-model malware patterns) ----------
   { id: 'rbx.backdoor-require', severity: 'critical', title: 'require() of a numeric asset id', scope: 'any',
@@ -21,11 +25,12 @@ export const RULES = [
     why: 'Anything in the place can be extracted; a leaked webhook or Open Cloud key can be abused.', fix: 'Remove it, rotate the key, and keep secrets in HttpService secrets (server only) or outside Roblox.' },
 
   // ---------- Remotes ----------
+  // Handlers passed by name (`:Connect(onBuy)`) are checked by lint.mjs against these two rules as well.
   { id: 'rbx.remote-trusts-client-value', severity: 'high', title: 'Remote handler takes a price/reward/damage from the client', scope: 'server',
-    re: /OnServerEvent:Connect\(\s*function\s*\(\s*\w+\s*,[^)]*\b(price|cost|amount|reward|damage|coins|cash|money|gems|xp|exp|health|speed)\b/gi,
+    re: new RegExp(String.raw`OnServerEvent:Connect\(\s*function\s*\(\s*\w+\s*,[^)]*` + CLIENT_VALUE_PARAM.source, 'gi'),
     why: 'Exploiters can send any value; the server must decide prices, rewards and damage.', fix: 'Send an id or intent; look the value up on the server.' },
   { id: 'rbx.remote-unvalidated', severity: 'medium', title: 'OnServerEvent handler without argument validation', scope: 'server',
-    re: /OnServerEvent:Connect\(\s*function\s*\([^)]*\)/g, blockNot: /typeof\s*\(|type\s*\(|Validate|validate|assert\s*\(|t\.\w+\(|guard|check/,
+    re: /OnServerEvent:Connect\(\s*function\s*\([^)]*\)/g, blockNot: VALIDATION,
     why: 'Wrong types or NaN from a modified client can break game state.', fix: 'Register the remote with Net.on and a Validate check per argument.' },
   { id: 'rbx.invoke-client', severity: 'high', title: 'RemoteFunction:InvokeClient', scope: 'server', re: /:InvokeClient\s*\(/g,
     why: 'A client can never answer and hang the server thread, or return anything.', fix: 'Use a RemoteEvent and handle the client reply as untrusted input.' },

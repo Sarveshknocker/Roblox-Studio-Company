@@ -18,7 +18,17 @@ local Flow = Enum.AnalyticsEconomyFlowType
 local Transaction = Enum.AnalyticsEconomyTransactionType
 
 local Economy = {}
-local multipliers: { [Player]: { [string]: number } } = {}
+local ownedPasses: { [Player]: { [number]: boolean } } = {}
+
+local function isMultiplierPass(offer: any): boolean
+	return offer.kind == "pass" and (offer.gamePassId or 0) > 0 and (offer.effect or {}).multiplier ~= nil
+end
+local passById: { [number]: any } = {}
+for _, offer in Config.robux do
+	if isMultiplierPass(offer) then
+		passById[offer.gamePassId] = offer
+	end
+end
 
 local unlockById: { [string]: any } = {}
 local unlockIds: { string } = {}
@@ -82,26 +92,46 @@ function Economy.tryBuyUnlock(player: Player, unlockId: string)
 	Net.fire("Notify", player, "unlocked", unlockId)
 end
 
-local function loadPassMultipliers(player: Player)
-	local result: { [string]: number } = {}
-	for _, offer in Config.robux do
-		if
-			offer.kind == "pass"
-			and offer.gamePassId
-			and offer.gamePassId > 0
-			and offer.effect
-			and offer.effect.multiplier
-		then
-			local ok, owns =
-				pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, offer.gamePassId)
-			if ok and owns then
-				for currency, factor in offer.effect.multiplier do
-					result[currency] = (result[currency] or 1) * factor
-				end
-			end
+-- Passes stack by multiplying. Computed from the owned set, so a pass bought mid-session counts straight away.
+local function multiplierFor(player: Player, currency: string): number
+	local factor = 1
+	for gamePassId in ownedPasses[player] or {} do
+		factor *= passById[gamePassId].effect.multiplier[currency] or 1
+	end
+	return factor
+end
+
+local function ownedSet(player: Player): { [number]: boolean }?
+	if player.Parent == nil then
+		return nil -- left already; do not create state that PlayerRemoving will never clear
+	end
+	local owned = ownedPasses[player] or {}
+	ownedPasses[player] = owned
+	return owned
+end
+
+local function loadPasses(player: Player)
+	local owned = ownedSet(player)
+	if owned == nil then
+		return
+	end
+	for gamePassId in passById do
+		local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, gamePassId)
+		if ok and owns then
+			owned[gamePassId] = true
 		end
 	end
-	multipliers[player] = result
+end
+
+-- Fired on the server by Roblox, not by the client, so `purchased` can be trusted. UserOwnsGamePassAsync is cached
+-- and can still return false right after buying, so the pass is applied from this event instead of a re-check.
+local function onPassPurchased(player: Player, gamePassId: number, purchased: boolean)
+	local offer = passById[gamePassId]
+	local owned = if purchased and offer then ownedSet(player) else nil
+	if owned then
+		owned[gamePassId] = true
+		Net.fire("Notify", player, "purchased", offer.id)
+	end
 end
 
 local function tickMinute(player: Player)
@@ -113,7 +143,7 @@ local function tickMinute(player: Player)
 	local bonus = upgradeBonus(data)
 	for _, source in Config.sources do
 		if source.perMinute then
-			local factor = (multipliers[player] or {})[source.currency] or 1
+			local factor = multiplierFor(player, source.currency)
 			local growth = source.growthPerLevel or 0
 			local amount = Progression.incomePerMinute(source.perMinute, growth, data.Level, bonus, factor)
 			Economy.award(player, source.currency, amount, Transaction.Gameplay.Name, source.id)
@@ -132,15 +162,16 @@ function Economy.start()
 		Economy.tryBuyUnlock(player, unlockId)
 	end)
 	PlayerData.onLoaded(function(player: Player)
-		loadPassMultipliers(player)
+		loadPasses(player)
 		for _, source in Config.sources do
 			if source.perSession then
 				Economy.award(player, source.currency, source.perSession, Transaction.TimedReward.Name, source.id)
 			end
 		end
 	end)
+	MarketplaceService.PromptGamePassPurchaseFinished:Connect(onPassPurchased)
 	Players.PlayerRemoving:Connect(function(player: Player)
-		multipliers[player] = nil
+		ownedPasses[player] = nil
 	end)
 	-- One loop for everyone (not one per player): fewer threads, predictable cost.
 	task.spawn(function()

@@ -1,6 +1,6 @@
 {
   "name": "roblox-studio-company",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A complete Roblox game studio in your AI assistant: Studio Manager, 10 departments, owner gates, open-source toolchain, economy simulator and Roblox security linter.",
   "author": { "name": "Sarvesh", "url": "https://github.com/Sarveshknocker" },
   "homepage": "https://github.com/Sarveshknocker/Roblox-Studio-Company",

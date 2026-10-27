@@ -73,7 +73,7 @@ game/             Rojo project in strict Luau, ready for Studio
 | `status [dir]` | the owner report; refuses "done" without evidence and decisions without a recommendation |
 | `economy economy.json` | minute-by-minute simulation of free and paying players: first reward, dead zones, content runway, inflation, pay-to-win, Robux value |
 | `config [dir]` | economy.json → `Config/Economy.luau`, so the game runs the numbers that were simulated |
-| `lint game` | Roblox security and performance linter: free-model backdoors, client-trusted remotes, missing validation and rate limits, unsafe DataStore use, leaks, paid random items without a policy check, and more (20 rules) |
+| `lint game` | Roblox security and performance linter: free-model backdoors, client-trusted remotes, missing validation and rate limits, unsafe DataStore use, leaks, paid random items without a policy check, and more (20 rules). A pattern-based safety net, not a proof of safety: QA still reviews every remote by hand |
 | `research "pet simulator"` | Developer Forum, GitHub and Wally research; filters exploit and cheat repos, labels what is reusable |
 | `deps game` | installs pinned, checksum-verified dependencies |
 | `doctor` | checks your toolchain and explains fixes |
