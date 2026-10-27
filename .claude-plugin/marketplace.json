@@ -1,0 +1,11 @@
+{
+  "name": "roblox-studio-company",
+  "owner": { "name": "Sarvesh" },
+  "plugins": [
+    {
+      "name": "roblox-studio-company",
+      "source": "./",
+      "description": "Roblox Studio Company: make a Roblox game with a full AI studio that reports to you."
+    }
+  ]
+}

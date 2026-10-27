@@ -1,0 +1,13 @@
+{
+  "name": "roblox-studio-company",
+  "version": "0.1.0",
+  "repository": "github:Sarveshknocker/Roblox-Studio-Company",
+  "description": "Turns any AI coding assistant into a complete Roblox game development studio: a Studio Manager who reports to you, plus design, Luau engineering, art, tech art, audio, QA, live-ops, publishing and research departments, with an open-source toolchain and real tools (economy simulator, Roblox security linter, owner reports).",
+  "type": "module",
+  "bin": { "roblox-studio": "bin/studio.mjs" },
+  "files": ["bin", "skills", "agents", "adapters", ".claude-plugin", ".codex-plugin", ".agents", "evals", "README.md", "LICENSE"],
+  "engines": { "node": ">=18" },
+  "scripts": { "test": "node tests/run.mjs", "test:live": "node tests/run.mjs --live" },
+  "keywords": ["roblox", "luau", "rojo", "game-development", "game-studio", "ai-agents", "agent-skills", "agents-md", "claude-code", "codex", "cursor", "gemini-cli", "copilot"],
+  "license": "MIT"
+}

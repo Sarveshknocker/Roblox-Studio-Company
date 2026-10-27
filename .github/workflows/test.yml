@@ -1,0 +1,31 @@
+name: test
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  kit:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [18, 22]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm test
+  luau-template:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: skills/studio-engineering/templates/game
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CompeyDev/setup-rokit@v0.2.1
+        with:
+          path: skills/studio-engineering/templates/game
+      - run: selene src
+      - run: stylua --check src tests
+      - run: lune run tests/run.luau
+      - run: rojo build -o game.rbxlx

@@ -1,0 +1,21 @@
+{
+  "name": "roblox-studio-company",
+  "interface": {
+    "displayName": "Roblox Studio Company"
+  },
+  "plugins": [
+    {
+      "name": "roblox-studio-company",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/Sarveshknocker/Roblox-Studio-Company.git",
+        "ref": "main"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

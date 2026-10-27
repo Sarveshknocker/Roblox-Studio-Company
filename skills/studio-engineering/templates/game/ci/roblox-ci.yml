@@ -1,0 +1,25 @@
+name: roblox-ci
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  game:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: game
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CompeyDev/setup-rokit@v0.2.1
+        with:
+          path: game
+      - name: Lint (Selene)
+        run: selene src
+      - name: Format check (StyLua)
+        run: stylua --check src tests
+      - name: Unit tests (Lune)
+        run: lune run tests/run.luau
+      - name: Build place file (Rojo)
+        run: rojo build default.project.json -o game.rbxl

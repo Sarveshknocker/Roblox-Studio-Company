@@ -1,0 +1,34 @@
+{
+  "name": "roblox-studio-company",
+  "version": "0.1.0",
+  "description": "A complete Roblox game studio in your AI assistant.",
+  "author": {
+    "name": "Sarvesh",
+    "url": "https://github.com/Sarveshknocker"
+  },
+  "homepage": "https://github.com/Sarveshknocker/Roblox-Studio-Company",
+  "repository": "https://github.com/Sarveshknocker/Roblox-Studio-Company",
+  "license": "MIT",
+  "keywords": [
+    "roblox",
+    "luau",
+    "rojo",
+    "game-development",
+    "game-studio"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Roblox Studio Company",
+    "shortDescription": "Your own Roblox game studio: design, build, test, launch, operate.",
+    "longDescription": "A Studio Manager who reports to you and ten departments (production, design, engineering, art, tech art, audio, QA, live-ops, publishing, research), each in its own folder. Interviews you for genre and story, then designs, builds in Luau with Rojo, tests, launches with your approval and runs the game, using open-source tools.",
+    "developerName": "Sarvesh",
+    "category": "Productivity",
+    "capabilities": [],
+    "websiteURL": "https://github.com/Sarveshknocker/Roblox-Studio-Company",
+    "defaultPrompt": [
+      "Start the studio: let us make a Roblox game.",
+      "Studio, give me a status report.",
+      "Balance our game economy and show me the report."
+    ]
+  }
+}
