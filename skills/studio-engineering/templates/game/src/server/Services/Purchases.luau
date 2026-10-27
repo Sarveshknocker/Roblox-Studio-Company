@@ -49,7 +49,15 @@ local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
 		for currency, amount in offer.grants do
 			data[currency] += amount
 			pcall(function()
-				AnalyticsService:LogEconomyEvent(player, Enum.AnalyticsEconomyFlowType.Source, currency, amount, data[currency], Enum.AnalyticsEconomyTransactionType.IAP.Name, offer.id)
+				AnalyticsService:LogEconomyEvent(
+					player,
+					Enum.AnalyticsEconomyFlowType.Source,
+					currency,
+					amount,
+					data[currency],
+					Enum.AnalyticsEconomyTransactionType.IAP.Name,
+					offer.id
+				)
 			end)
 		end
 		PlayerData.refreshLeaderstats(player)

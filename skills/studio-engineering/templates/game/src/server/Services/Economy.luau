@@ -14,6 +14,9 @@ local Validate = require(Shared.Pure.Validate)
 local Net = require(script.Parent.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 
+local Flow = Enum.AnalyticsEconomyFlowType
+local Transaction = Enum.AnalyticsEconomyTransactionType
+
 local Economy = {}
 local multipliers: { [Player]: { [string]: number } } = {}
 
@@ -24,7 +27,15 @@ for _, unlock in Config.unlocks do
 	table.insert(unlockIds, unlock.id)
 end
 
-local function logEconomy(player: Player, flow: Enum.AnalyticsEconomyFlowType, currency: string, amount: number, balance: number, transaction: string, sku: string?)
+local function logEconomy(
+	player: Player,
+	flow: Enum.AnalyticsEconomyFlowType,
+	currency: string,
+	amount: number,
+	balance: number,
+	transaction: string,
+	sku: string?
+)
 	-- Analytics must never break gameplay.
 	pcall(function()
 		AnalyticsService:LogEconomyEvent(player, flow, currency, amount, balance, transaction, sku)
@@ -38,7 +49,7 @@ function Economy.award(player: Player, currency: string, amount: number, transac
 	end
 	local data = profile.Data :: any
 	data[currency] += amount
-	logEconomy(player, Enum.AnalyticsEconomyFlowType.Source, currency, amount, data[currency], transaction, sku)
+	logEconomy(player, Flow.Source, currency, amount, data[currency], transaction, sku)
 	PlayerData.refreshLeaderstats(player)
 	return true
 end
@@ -66,7 +77,7 @@ function Economy.tryBuyUnlock(player: Player, unlockId: string)
 	end
 	data[unlock.currency] -= unlock.price
 	data.Unlocks[unlockId] = true
-	logEconomy(player, Enum.AnalyticsEconomyFlowType.Sink, unlock.currency, unlock.price, data[unlock.currency], Enum.AnalyticsEconomyTransactionType.Shop.Name, unlockId)
+	logEconomy(player, Flow.Sink, unlock.currency, unlock.price, data[unlock.currency], Transaction.Shop.Name, unlockId)
 	PlayerData.refreshLeaderstats(player)
 	Net.fire("Notify", player, "unlocked", unlockId)
 end
@@ -74,8 +85,15 @@ end
 local function loadPassMultipliers(player: Player)
 	local result: { [string]: number } = {}
 	for _, offer in Config.robux do
-		if offer.kind == "pass" and offer.gamePassId and offer.gamePassId > 0 and offer.effect and offer.effect.multiplier then
-			local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, offer.gamePassId)
+		if
+			offer.kind == "pass"
+			and offer.gamePassId
+			and offer.gamePassId > 0
+			and offer.effect
+			and offer.effect.multiplier
+		then
+			local ok, owns =
+				pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, offer.gamePassId)
 			if ok and owns then
 				for currency, factor in offer.effect.multiplier do
 					result[currency] = (result[currency] or 1) * factor
@@ -96,13 +114,14 @@ local function tickMinute(player: Player)
 	for _, source in Config.sources do
 		if source.perMinute then
 			local factor = (multipliers[player] or {})[source.currency] or 1
-			local amount = Progression.incomePerMinute(source.perMinute, source.growthPerLevel or 0, data.Level, bonus, factor)
-			Economy.award(player, source.currency, amount, Enum.AnalyticsEconomyTransactionType.Gameplay.Name, source.id)
+			local growth = source.growthPerLevel or 0
+			local amount = Progression.incomePerMinute(source.perMinute, growth, data.Level, bonus, factor)
+			Economy.award(player, source.currency, amount, Transaction.Gameplay.Name, source.id)
 		end
 	end
-	local levels = Config.levels
+	local lv = Config.levels
 	local before = data.Level
-	data.Level, data.Xp = Progression.addXp(data.Level, data.Xp, levels.xpPerMinute, levels.base, levels.exponent, levels.max)
+	data.Level, data.Xp = Progression.addXp(data.Level, data.Xp, lv.xpPerMinute, lv.base, lv.exponent, lv.max)
 	if data.Level > before then
 		Net.fire("Notify", player, "levelUp", data.Level)
 	end
@@ -116,7 +135,7 @@ function Economy.start()
 		loadPassMultipliers(player)
 		for _, source in Config.sources do
 			if source.perSession then
-				Economy.award(player, source.currency, source.perSession, Enum.AnalyticsEconomyTransactionType.TimedReward.Name, source.id)
+				Economy.award(player, source.currency, source.perSession, Transaction.TimedReward.Name, source.id)
 			end
 		end
 	end)

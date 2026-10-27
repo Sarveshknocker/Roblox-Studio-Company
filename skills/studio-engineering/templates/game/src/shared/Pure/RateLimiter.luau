@@ -16,7 +16,8 @@ RateLimiter.__index = RateLimiter
 function RateLimiter.new(capacity: number, refillPerSecond: number): RateLimiter
 	assert(capacity >= 1, "capacity must be >= 1")
 	assert(refillPerSecond > 0, "refillPerSecond must be > 0")
-	local self = setmetatable({ capacity = capacity, refill = refillPerSecond, buckets = {} :: { [any]: Bucket } }, RateLimiter)
+	local self =
+		setmetatable({ capacity = capacity, refill = refillPerSecond, buckets = {} :: { [any]: Bucket } }, RateLimiter)
 	return (self :: any) :: RateLimiter
 end
 
@@ -26,7 +27,7 @@ function RateLimiter.allow(self: any, key: any, now: number): boolean
 		bucket = { tokens = self.capacity, last = now }
 		self.buckets[key] = bucket
 	end
-	assert(bucket)
+	assert(bucket, "rate limiter bucket missing")
 	local elapsed = math.max(0, now - bucket.last)
 	bucket.tokens = math.min(self.capacity, bucket.tokens + elapsed * self.refill)
 	bucket.last = now
